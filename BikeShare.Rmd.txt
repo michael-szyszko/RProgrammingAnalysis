@@ -1,0 +1,85 @@
+---
+title: "Preliminary Analysis: Converting Casual Members into Annual Members"
+author: "Michael Szyszko"
+date: "2023-12-21"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminary Finding Summary
+
+Generally, the most popular members stations do not match with the most popular casual stations. Further investigation is needed, however, based on the station names that include keywords such as "aquariam", "planetarium", "park", suggest that casual riders may be using the service more for leisure relatively compared to member riders. 
+
+## Data Used in Preliminary Analysis
+
+This preliminary analysis focused on internal data collected in Q1 of 2020 for member and casual rides during that period. Further analysis is needed to verify the findings for other quarters and years. There were suspicious entries that had very short and long trip durations that were excluded in this preliminary analysis that require further investigation. This does call into question the validity of the data given the amount of errors seen. 
+
+## Recommendations Based on Preliniary Finding Summary
+
+1) Investigate potential membership benefits that could be bundled with local tourist attractions and leisure activities (e.g., member discounts for entry to the local aquarium).
+
+2) Targeted marketing campaigns at the most popular stations for casual riders.
+
+3) Investigate the feasibility of creating guided activities or interactive maps that could be offered to members. 
+
+
+
+```{r libraries, include=FALSE }
+install.packages('ggplot2')
+install.packages('dplyr')
+library(ggplot2)
+library(dplyr)
+```
+
+
+
+```{r load data}
+trips_2020_q1 <- read.csv("Trips_2020_Q1.csv")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r Data Manipulation}
+trips_2020_q1_membership <- trips_2020_q1 %>% 
+  rename(membership = member_casual)
+trips_2020_q1_with_duration <- mutate(trips_2020_q1_membership, duration=difftime(ended_at, started_at, units="mins"))
+trips_2020_q1_with_clean_duration <- trips_2020_q1_with_duration %>%
+  filter(duration >= 1, duration <= 600)
+trips_2020_q1_with_extreme_duration <- trips_2020_q1_with_duration %>%
+  filter(duration < 1 | duration > 600)
+head(trips_2020_q1)
+```
+There were rides that were very short and long (e.g., only a few seconds). It is likely that there are some data entry errors or system malfunctions. For the purposes of this analysis all extreme values, those below 1 minute and those above 10 hours have been removed. However, further investigation into why these values exist and if it may be also be impacting the remaining data being analyzed.  
+```{r Membership count with all data.}
+ggplot(data=trips_2020_q1_with_extreme_duration)+
+  geom_bar(mapping=aes(x=membership))+
+  ggtitle("Ride Data by Membership with Extreme Durations that are Excluded")
+```
+
+
+```{r Station Distribution Chart}
+#data_trips_2020_q1_by_station <- data_trips202_q1 %>% 
+ggplot(data=trips_2020_q1_with_clean_duration)+
+  geom_bar(mapping=aes(x=start_station_id))+
+  facet_wrap(~membership)
+```
+
+```{r Most popular stations for casual riders.}
+trips_2020_q1_with_clean_duration %>% 
+  filter(membership=="casual") %>%
+  count(start_station_id, start_station_name) %>%
+  arrange(-n)
+```
+```{r Most popular stations for member riders.}
+trips_2020_q1_with_clean_duration %>% 
+  filter(membership=="member") %>%
+  count(start_station_id, start_station_name) %>%
+  arrange(-n)
+```
